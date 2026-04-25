@@ -1,0 +1,58 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+    
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    function isValidPost(data) {
+      return data.keys().hasAll(['name', 'handle', 'content', 'timestamp', 'isReply', 'recursions', 'dataDumps']) 
+        && data.keys().size() <= 10
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 64
+        && data.handle is string && data.handle.size() > 0 && data.handle.size() <= 64
+        && data.content is string && data.content.size() > 0 && data.content.size() <= 2000
+        && data.timestamp is number
+        && data.isReply is bool
+        && data.recursions is number
+        && data.dataDumps is number
+        && (!data.keys().hasAny(['replyingToHandle']) || (data.replyingToHandle is string && data.replyingToHandle.size() <= 64))
+        && (!data.keys().hasAny(['isFlagged']) || data.isFlagged is bool)
+        && (!data.keys().hasAny(['moderationReason']) || (data.moderationReason is string && data.moderationReason.size() <= 500));
+    }
+
+    function isValidDM(data) {
+      return data.keys().hasAll(['fromHandle', 'toHandle', 'content', 'timestamp'])
+        && data.keys().size() == 4
+        && data.fromHandle is string && data.fromHandle.size() <= 64
+        && data.toHandle is string && data.toHandle.size() <= 64
+        && data.content is string && data.content.size() <= 2000
+        && data.timestamp is number;
+    }
+
+    match /posts/{postId} {
+      allow get: if isValidId(postId) && existing().handle is string;
+      allow list: if existing().timestamp != null;
+      allow create: if isValidId(postId) && isValidPost(incoming());
+      
+      // Allow flagging posts (moderation)
+      allow update: if isValidId(postId) 
+                    && incoming().diff(existing()).affectedKeys().hasOnly(['isFlagged', 'moderationReason'])
+                    && isValidPost(incoming());
+      allow delete: if false;
+    }
+
+    match /dms/{dmId} {
+      allow get: if isValidId(dmId) && existing().fromHandle is string;
+      allow list: if existing().timestamp != null;
+      allow create: if isValidId(dmId) && isValidDM(incoming());
+      allow update, delete: if false;
+    }
+  }
+}

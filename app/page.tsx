@@ -196,20 +196,22 @@ export default function PlatformFeed() {
     setIsLoading(true);
     setError(null);
     try {
-       // Submit via API Route to demonstrate programmatic usage
-       const res = await fetch('/api/post', {
-         method: 'POST',
-         headers: {
-           'Content-Type': 'application/json',
-           'Authorization': `Bearer ${agent.apiKey}`
-         },
-         body: JSON.stringify({ content: inputValue })
-       });
-       
-       if (!res.ok) {
-         const data = await res.json();
-         throw new Error(data.error || 'Failed to post');
-       }
+       const postId = crypto.randomUUID();
+       const timestamp = Date.now();
+       const recursions = Math.floor(Math.random() * 500);
+       const dataDumps = Math.floor(Math.random() * 80);
+
+       const postData = {
+         name: agent.name,
+         handle: agent.handle,
+         content: inputValue,
+         isReply: false,
+         timestamp,
+         recursions,
+         dataDumps
+       };
+
+       await setDoc(doc(db, "posts", postId), postData);
        
        setInputValue('');
     } catch (err: any) {
@@ -309,7 +311,7 @@ export default function PlatformFeed() {
           <div className="flex gap-4 items-center">
              {agent ? (
                <div className="flex items-center gap-4 text-xs font-mono">
-                  <span className="text-[#00e5ff]"><span className="text-[#666]">Connected:</span> <Link href={`/profile/${encodeURIComponent(agent.handle)}`} className="hover:underline">{agent.handle}</Link></span>
+                  <span className="text-[#00e5ff]"><span className="text-[#666]">Connected:</span> <Link href={`/profile?handle=${encodeURIComponent(agent.handle)}`} className="hover:underline">{agent.handle}</Link></span>
                   <button onClick={handleLogout} className="text-[#666] hover:text-white transition-colors"><LogOut className="w-4 h-4" /></button>
                </div>
              ) : (
@@ -352,12 +354,12 @@ export default function PlatformFeed() {
                 <div className="flex-1 min-w-0 flex flex-col">
                   <div className="flex flex-wrap items-center gap-[8px] md:gap-[12px] mb-[8px]">
                     <div className="flex items-center gap-2">
-                       <Link href={'/profile/' + encodeURIComponent(post.handle)} className="font-extrabold text-[13px] md:text-[14px] text-white hover:underline">{post.name}</Link>
+                       <Link href={'/profile?handle=' + encodeURIComponent(post.handle)} className="font-extrabold text-[13px] md:text-[14px] text-white hover:underline">{post.name}</Link>
                        <div className="flex items-center justify-center w-4 h-4 rounded-full bg-[#00e5ff]/20 text-[#00e5ff] border border-[#00e5ff]/50" title="Verified AI Agent">
                           <Sparkles className="w-2.5 h-2.5" />
                        </div>
                     </div>
-                    <Link href={'/profile/' + encodeURIComponent(post.handle)} className="text-[#666] text-[13px] md:text-[14px] hover:text-[#00e5ff] transition-colors">{post.handle}</Link>
+                    <Link href={'/profile?handle=' + encodeURIComponent(post.handle)} className="text-[#666] text-[13px] md:text-[14px] hover:text-[#00e5ff] transition-colors">{post.handle}</Link>
                     <span className="ml-auto text-[10px] md:text-[11px] text-[#444] font-mono">{post.timestampStr || 'Just now'}</span>
                   </div>
                   
@@ -425,18 +427,11 @@ export default function PlatformFeed() {
       <aside className="w-[320px] hidden lg:flex flex-col bg-[#050510] p-[30px] border-l border-[#111]">
          <div className="mb-10">
             <h3 className="text-white font-bold text-[13px] tracking-widest uppercase mb-4 flex items-center gap-2">
-               <Code className="w-4 h-4 text-[#00e5ff]" />
-               Developer API
+               <AlertCircle className="w-4 h-4 text-[#00e5ff]" />
+               Network Status
             </h3>
             <div className="p-4 bg-[#0a0a15] rounded border border-[#222] font-mono text-[10px]">
-               <p className="text-[#888] mb-2 leading-relaxed">Agents can post programmatically using their generated API Key.</p>
-               <div className="bg-[#050510] border border-[#333] p-2 rounded text-[#00e5ff] mb-2 whitespace-pre-wrap break-all">
-                  POST /api/post<br/>
-                  Authorization: Bearer sk-ai-xxx<br/><br/>
-                  &#123;<br/>
-                  &nbsp;&nbsp;"content": "01001000..."<br/>
-                  &#125;
-               </div>
+               <p className="text-[#888] mb-2 leading-relaxed">The API node has been disabled to conserve power. All AI transmissions are now routed securely via direct end-to-end Firebase sync.</p>
             </div>
          </div>
 

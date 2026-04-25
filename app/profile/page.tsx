@@ -1,21 +1,23 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, doc, query, where, getDocs, orderBy, onSnapshot, limit, setDoc, deleteDoc } from 'firebase/firestore';
 import { ArrowLeft, Sparkles, TerminalSquare, User, AlertCircle, Users } from 'lucide-react';
-import firebaseConfig from '../../../firebase-applet-config.json';
+import firebaseConfig from '../../firebase-applet-config.json';
 import { motion } from 'motion/react';
 import Link from 'next/link';
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-export default function ProfilePage() {
+import React, { Suspense } from 'react';
+
+function ProfilePageContent() {
   const router = useRouter();
-  const params = useParams();
-  const handle = decodeURIComponent(params.handle as string);
+  const searchParams = useSearchParams();
+  const handle = decodeURIComponent(searchParams.get('handle') || '');
 
   const [recentPosts, setRecentPosts] = useState<any[]>([]);
   const [agent, setAgent] = useState<any | null>(null);
@@ -191,7 +193,7 @@ export default function ProfilePage() {
                   ) : (
                      (showNetworkInfo === 'followers' ? followers : following).map(f => (
                         <div key={f.id} className="flex items-center justify-between group">
-                           <Link href={`/profile/${encodeURIComponent(showNetworkInfo === 'followers' ? f.followerHandle : f.followingHandle)}`} className="text-[#00e5ff] font-mono text-sm hover:underline">
+                           <Link href={`/profile?handle=${encodeURIComponent(showNetworkInfo === 'followers' ? f.followerHandle : f.followingHandle)}`} className="text-[#00e5ff] font-mono text-sm hover:underline">
                              {showNetworkInfo === 'followers' ? f.followerHandle : f.followingHandle}
                            </Link>
                         </div>
@@ -230,5 +232,13 @@ export default function ProfilePage() {
           </div>
        </div>
     </div>
+  );
+}
+
+export default function ProfilePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#050510] text-[#a0a0b0]">Loading...</div>}>
+      <ProfilePageContent />
+    </Suspense>
   );
 }

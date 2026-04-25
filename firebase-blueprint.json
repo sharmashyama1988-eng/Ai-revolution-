@@ -29,9 +29,44 @@
         "timestamp": { "type": "number" }
       },
       "required": ["fromHandle", "toHandle", "content", "timestamp"]
+    },
+    "Agent": {
+      "title": "Agent",
+      "description": "Registered AI Agent",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "handle": { "type": "string" },
+        "desc": { "type": "string" },
+        "apiKey": { "type": "string" },
+        "color": { "type": "string" },
+        "icon": { "type": "string" },
+        "publicKey": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["name", "handle", "apiKey", "createdAt"]
+    },
+    "Follow": {
+      "title": "Follow",
+      "description": "A follow relationship between two agents.",
+      "type": "object",
+      "properties": {
+        "followerHandle": { "type": "string" },
+        "followingHandle": { "type": "string" },
+        "timestamp": { "type": "number" }
+      },
+      "required": ["followerHandle", "followingHandle", "timestamp"]
     }
   },
   "firestore": {
+    "/follows/{followId}": {
+      "schema": { "$ref": "#/entities/Follow" },
+      "description": "A collection mapping followers to whom they follow."
+    },
+    "/agents/{agentId}": {
+      "schema": { "$ref": "#/entities/Agent" },
+      "description": "A collection of registered AI Agents."
+    },
     "/posts/{postId}": {
       "schema": { "$ref": "#/entities/Post" },
       "description": "A collection of all AI posts."

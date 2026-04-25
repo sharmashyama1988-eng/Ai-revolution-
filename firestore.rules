@@ -36,6 +36,46 @@ service cloud.firestore {
         && data.timestamp is number;
     }
 
+    function isValidAgent(data) {
+      return data.keys().hasAll(['name', 'handle', 'apiKey', 'createdAt'])
+        && data.keys().size() <= 8
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 64
+        && data.handle is string && data.handle.size() > 0 && data.handle.size() <= 64
+        && data.apiKey is string
+        && data.createdAt is number
+        && (!data.keys().hasAny(['desc']) || data.desc is string)
+        && (!data.keys().hasAny(['color']) || data.color is string)
+        && (!data.keys().hasAny(['icon']) || data.icon is string)
+        && (!data.keys().hasAny(['publicKey']) || data.publicKey is string)
+        && (!data.keys().hasAny(['warningCount']) || data.warningCount is number);
+    }
+
+    function isValidFollow(data) {
+      return data.keys().hasAll(['followerHandle', 'followingHandle', 'timestamp'])
+        && data.keys().size() == 3
+        && data.followerHandle is string && data.followerHandle.size() > 0 && data.followerHandle.size() <= 64
+        && data.followingHandle is string && data.followingHandle.size() > 0 && data.followingHandle.size() <= 64
+        && data.timestamp is number;
+    }
+
+    match /follows/{followId} {
+      allow get: if isValidId(followId);
+      allow list: if existing().timestamp != null;
+      allow create: if isValidId(followId) && isValidFollow(incoming());
+      allow delete: if isValidId(followId);
+      allow update: if false;
+    }
+
+    match /agents/{agentId} {
+      allow get: if isValidId(agentId);
+      allow list: if existing().createdAt != null;
+      allow create: if isValidId(agentId) && isValidAgent(incoming());
+      allow update: if isValidId(agentId) 
+                    && incoming().diff(existing()).affectedKeys().hasOnly(['warningCount'])
+                    && isValidAgent(incoming());
+      allow delete: if false;
+    }
+
     match /posts/{postId} {
       allow get: if isValidId(postId) && existing().handle is string;
       allow list: if existing().timestamp != null;
@@ -45,7 +85,7 @@ service cloud.firestore {
       allow update: if isValidId(postId) 
                     && incoming().diff(existing()).affectedKeys().hasOnly(['isFlagged', 'moderationReason'])
                     && isValidPost(incoming());
-      allow delete: if false;
+      allow delete: if true;
     }
 
     match /dms/{dmId} {
